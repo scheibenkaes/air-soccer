@@ -6,5 +6,5 @@
 
 (defn -main
   []
-  (LwjglApplication. air-soccer-game "air-soccer" 800 600)
+  (LwjglApplication. air-soccer-game "air-soccer" 640 320)
   (Keyboard/enableRepeatEvents true))
