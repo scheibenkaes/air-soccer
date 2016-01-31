@@ -3,8 +3,11 @@
             [play-clj.g2d :refer :all]
             [play-clj.math :refer :all]
             [play-clj.g2d-physics :refer :all]
-            [play-clj.ui :refer :all])
-  )
+            [play-clj.ui :refer :all]))
+
+(declare air-soccer-game main-screen)
+
+(def ^:const border-strength 5)
 
 (defn create-ball [screen x y]
   (let [t (texture "Ball.png")
@@ -47,23 +50,23 @@
     s))
 
 (defn create-lower-bounds [screen]
-  (let [s (create-rect 640 20)
-        b (create-rect-body! screen 640 20)]
+  (let [s (create-rect 640 border-strength)
+        b (create-rect-body! screen 640 border-strength)]
     (body-position! b 0 0 0)
     (assoc s :body b)))
 
 (defn create-upper-bounds [screen]
-  (let [s (create-rect 640 20)
-        b (create-rect-body! screen 640 20)]
-    (body-position! b 0 300 0)
+  (let [s (create-rect 640 border-strength)
+        b (create-rect-body! screen 640 border-strength)]
+    (body-position! b 0 (- 320 border-strength) 0)
     (assoc s :body b)))
 
 (def ^:const goal-size 64)
 
 (defn create-side-bound [screen x y]
   (let [h (- (/ 320 2) (/ goal-size 2))
-        s (create-rect 20 h)
-        b (create-rect-body! screen 20 h)]
+        s (create-rect border-strength h)
+        b (create-rect-body! screen border-strength h)]
     (println h)
     (body-position! b x y 0)
     (assoc s :body b)))
@@ -74,9 +77,15 @@
     [lower upper]))
 
 (defn create-right-bounds [screen]
-  (let [lower (create-side-bound screen (- 640 20) 0)
-        upper (create-side-bound screen (- 640 20) (+ (/ 320 2) (/ goal-size 2)))]
+  (let [lower (create-side-bound screen (- 640 border-strength) 0)
+        upper (create-side-bound screen (- 640 border-strength) (+ (/ 320 2) (/ goal-size 2)))]
     [lower upper]))
+
+(defn stop-ball! [{:keys [ball?] :as e}]
+  (if ball?
+    (doto e
+      (body! :set-linear-velocity (vector-2 0 0)))
+    e))
 
 (defscreen main-screen
   :on-show
@@ -87,17 +96,27 @@
        (create-lower-bounds screen)
        (create-upper-bounds screen)
        (create-left-bounds screen)
-       (create-right-bounds screen)])
-    )
+       (create-right-bounds screen)]))
 
   :on-key-down
-  (fn [screen entities]
+  (fn [{:keys [key] :as screen} entities]
     (->> entities
          (map (fn [{:keys [ball?] :as e}]
                 (if ball?
-                  (doto e
-                    (body! :apply-linear-impulse (vector-2 500000 -1200000)
-                           (body! e :get-world-center) true)) 
+                  (cond 
+                    (= key (key-code :space))
+                    (do
+                      (println (body! e :get-linear-velocity))
+                      e)
+                    (= key (key-code :enter))
+                    (doto e
+                      (body! :apply-linear-impulse (vector-2 500000 -1200000)
+                             (body! e :get-world-center) true))
+                    (= key (key-code :s))
+                    (stop-ball! e)
+                    (= key (key-code :r))
+                    (on-gl (set-screen! air-soccer-game main-screen))
+                    :else e) 
                   e)))))
   
   :on-render
@@ -105,8 +124,7 @@
     (clear!)
     (->> entities
          (step! screen)
-         (render! screen)))
-  )
+         (render! screen))))
 
 (defscreen error-screen
   :on-show
