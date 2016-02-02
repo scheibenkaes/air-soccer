@@ -111,7 +111,19 @@
     (update! screen :renderer (stage))
     [(assoc (label "0" (color :red))
             :fps? true
-            :x 5 :y 0)])
+            :x 5 :y 0)
+     (assoc (label "0:0" (color :red) :set-alignment (align :center))
+            :scoreboard? true
+            :goals-1 0 :goals-2 0
+            :x (/ (game :width) 2)
+            :y (- (game :height) 25))])
+
+  :on-goal-scored
+  (fn [{:keys [goals-1 goals-2] :as screen} entities]
+    (map (fn [e]
+           (if (:scoreboard? e)
+             (assoc e :goals-1 goals-1 :goals-2 goals-2)
+             e)) entities))
   
   :on-render
   (fn [screen entities]
@@ -120,9 +132,18 @@
                      (if (:fps? e)
                        (doto e
                          (label! :set-text (str (game :fps))))
+                       e)) entities))
+            (render-scoreboard [entities]
+              (map (fn [e]
+                     (if (:scoreboard? e)
+                       (let [{:keys [goals-1 goals-2] :or {goals-1 0
+                                                           goals-2 0}} e
+                             s (str goals-1 ":" goals-2)]
+                         (doto e (label! :set-text s)))
                        e)) entities))]
       (->> entities
            (render-fps)
+           (render-scoreboard)
            (render! screen)))))
 
 (defn restart-game! []
@@ -137,10 +158,17 @@
             e)
            e)) entities))
 
+(defn score-for! [screen player]
+  (let [k (if (= player :player-1) :goals-1 :goals-2)
+        score (inc (get screen k))
+        {:keys [goals-1 goals-2]} (update! screen k score)]
+    (screen! text-screen :on-goal-scored :goals-1 goals-1 :goals-2 goals-2)))
+
 (defscreen main-screen
   :on-show
   (fn [screen entities]
     (let [screen (update! screen :renderer (stage) :camera (orthographic) :world (box-2d 0 0))]
+      (update! screen :goals-1 0 :goals-2 0)
       (width! screen 640)
       [(create-ball screen 75 100)
        (create-arrow)
@@ -167,6 +195,17 @@
                     (stop-ball! screen e)
                     (= key (key-code :r))
                     (restart-game!)
+
+                    (= key (key-code :num-1))
+                    (do
+                      (score-for! screen :player-1)
+                      e)
+                    
+                    (= key (key-code :num-2))
+                    (do
+                      (score-for! screen :player-2)
+                      e)
+
                     :else e) 
                   e)))))
   
