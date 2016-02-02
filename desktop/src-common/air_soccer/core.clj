@@ -7,7 +7,14 @@
 
 (declare air-soccer-game main-screen)
 
+(def ^:const goal-size 64)
 (def ^:const border-strength 5)
+
+(defn create-arrow []
+  (let [t (texture "Arrow.png")]
+    (assoc t :arrow? true
+           :x 36 :y 64
+           :scale-x 2 :scale-y 2)))
 
 (defn create-ball [screen x y]
   (let [t (texture "Ball.png")
@@ -61,8 +68,6 @@
     (body-position! b 0 (- 320 border-strength) 0)
     (assoc s :body b)))
 
-(def ^:const goal-size 64)
-
 (defn create-side-bound [screen x y]
   (let [h (- (/ 320 2) (/ goal-size 2))
         s (create-rect border-strength h)
@@ -93,6 +98,7 @@
     (let [screen (update! screen :renderer (stage) :camera (orthographic) :world (box-2d 0 0))]
       (width! screen 640)
       [(create-ball screen 75 100)
+       (create-arrow)
        (create-lower-bounds screen)
        (create-upper-bounds screen)
        (create-left-bounds screen)
