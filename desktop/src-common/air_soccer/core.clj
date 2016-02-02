@@ -5,7 +5,7 @@
             [play-clj.g2d-physics :refer :all]
             [play-clj.ui :refer :all]))
 
-(declare air-soccer-game main-screen)
+(declare air-soccer-game main-screen text-screen)
 
 (def ^:const goal-size 64)
 (def ^:const border-strength 5)
@@ -23,6 +23,8 @@
         tiles (texture! t :split size size)
         tiles (->> (aget tiles 0)
                    (map texture*))
+
+        anim (animation 0.2 tiles :set-play-mode (play-mode :loop))
         
         body (add-body! screen (body-def :dynamic))
         shape (circle-shape :set-radius radius
@@ -32,6 +34,7 @@
     (body-position! body x y 0)
     (assoc (first tiles)
            :body body
+           :animation anim
            :width size :height size
            :spinning? false
            :tiles tiles
@@ -86,11 +89,43 @@
         upper (create-side-bound screen (- 640 border-strength) (+ (/ 320 2) (/ goal-size 2)))]
     [lower upper]))
 
-(defn stop-ball! [{:keys [ball?] :as e}]
+(defn stop-ball! [screen {:keys [ball?] :as e}]
   (if ball?
-    (doto e
-      (body! :set-linear-velocity (vector-2 0 0)))
+    (do
+      (update! screen :current-player :player-1)
+      (doto e
+        (body! :set-linear-velocity (vector-2 0 0))))
     e))
+
+(defn update-arrow! [{:keys [active-player] :as screen} entities]
+  (map (fn [{:keys [arrow?] :as e}]
+         (if arrow?
+           (let [{:keys [x y width]} (find-first :ball? entities)]
+             (assoc e :x width :y y))
+           e)) entities))
+
+(defscreen text-screen
+  :on-show
+  (fn [screen entities]
+    (update! screen :renderer (stage))
+    [(assoc (label "0" (color :red))
+            :fps? true
+            :x 5 :y 0)])
+  
+  :on-render
+  (fn [screen entities]
+    (letfn [(render-fps [entities]
+              (map (fn [e]
+                     (if (:fps? e)
+                       (doto e
+                         (label! :set-text (str (game :fps))))
+                       e)) entities))]
+      (->> entities
+           (render-fps)
+           (render! screen)))))
+
+(defn restart-game! []
+  (on-gl (set-screen! air-soccer-game main-screen text-screen)))
 
 (defscreen main-screen
   :on-show
@@ -119,9 +154,9 @@
                       (body! :apply-linear-impulse (vector-2 500000 -1200000)
                              (body! e :get-world-center) true))
                     (= key (key-code :s))
-                    (stop-ball! e)
+                    (stop-ball! screen e)
                     (= key (key-code :r))
-                    (on-gl (set-screen! air-soccer-game main-screen))
+                    (restart-game!)
                     :else e) 
                   e)))))
   
@@ -130,6 +165,7 @@
     (clear!)
     (->> entities
          (step! screen)
+         (update-arrow! screen)
          (render! screen))))
 
 (defscreen error-screen
@@ -146,7 +182,7 @@
 (defgame air-soccer-game
   :on-create
   (fn [this]
-    (set-screen! this main-screen)))
+    (set-screen! this main-screen text-screen)))
 
 (comment
   (set-screen-wrapper! (fn [screen screen-fn]
@@ -154,9 +190,6 @@
                               (catch Exception e
                                 (.printStackTrace e)
                                 (set-screen! air-soccer-game error-screen)))))
-
-  ;; (fset 'reset-to-main-screen [?\C-s ?R ?E ?S ?E ?T ?\S-  ?T ?O return ?\C-n ?\C-e ?\C-x ?\C-e ?\C-u ?\C- ])
-
   
   (do
     (require '[air-soccer.core.desktop-launcher :as launcher])
