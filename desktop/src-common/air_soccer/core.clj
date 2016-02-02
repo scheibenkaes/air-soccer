@@ -75,7 +75,6 @@
   (let [h (- (/ 320 2) (/ goal-size 2))
         s (create-rect border-strength h)
         b (create-rect-body! screen border-strength h)]
-    (println h)
     (body-position! b x y 0)
     (assoc s :body b)))
 
@@ -93,8 +92,10 @@
   (if ball?
     (do
       (update! screen :current-player :player-1)
-      (doto e
-        (body! :set-linear-velocity (vector-2 0 0))))
+      (assoc
+       (doto e
+         (body! :set-linear-velocity (vector-2 0 0)))
+       :spinning? false))
     e))
 
 (defn update-arrow! [{:keys [active-player] :as screen} entities]
@@ -127,6 +128,15 @@
 (defn restart-game! []
   (on-gl (set-screen! air-soccer-game main-screen text-screen)))
 
+(defn animate-ball [screen entities]
+  (map (fn [{:keys [animation ball? spinning?] :as e}]
+         (if ball?
+           (if spinning?
+            (let [t (animation->texture screen animation)]
+              (merge e t))
+            e)
+           e)) entities))
+
 (defscreen main-screen
   :on-show
   (fn [screen entities]
@@ -147,12 +157,12 @@
                   (cond 
                     (= key (key-code :space))
                     (do
-                      (println (body! e :get-linear-velocity))
                       e)
                     (= key (key-code :enter))
-                    (doto e
-                      (body! :apply-linear-impulse (vector-2 500000 -1200000)
-                             (body! e :get-world-center) true))
+                    (assoc (doto e
+                             (body! :apply-linear-impulse (vector-2 500000 -1200000)
+                                    (body! e :get-world-center) true))
+                           :spinning? true)
                     (= key (key-code :s))
                     (stop-ball! screen e)
                     (= key (key-code :r))
@@ -166,6 +176,7 @@
     (->> entities
          (step! screen)
          (update-arrow! screen)
+         (animate-ball screen)
          (render! screen))))
 
 (defscreen error-screen
