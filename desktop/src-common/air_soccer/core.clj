@@ -98,11 +98,21 @@
        :spinning? false))
     e))
 
+(defn deg->ccw [deg]
+  (if (neg? deg)
+    (- 360 deg)
+    deg))
+
 (defn update-arrow! [{:keys [active-player] :as screen} entities]
   (map (fn [{:keys [arrow?] :as e}]
          (if arrow?
-           (let [{:keys [x y width]} (find-first :ball? entities)]
-             (assoc e :x width :y y))
+           (let [{:keys [x y width] :as ball} (find-first :ball? entities)
+                 pos (body! ball :get-position)
+                 {mouse-x :x mouse-y :y} (input->screen screen (input! :get-x) (input! :get-y))
+                 mouse-pos (vector-2 mouse-x mouse-y)
+                 angle (vector-2! pos :sub mouse-pos)
+                 angle (vector-2! angle :angle)]
+             (assoc e :x x :y y :angle angle))
            e)) entities))
 
 (defscreen text-screen
