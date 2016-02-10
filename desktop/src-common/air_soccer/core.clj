@@ -114,6 +114,7 @@
                     :x (+ (x pos-ball) (/ width 2))
                     :y (- (y pos-ball) (/ height 2))
                     :angle angle
+                    :vector sub
                     :origin-x (- (/ width 2))
                     :origin-y (/ height 2)))
            e)) entities))
@@ -183,12 +184,21 @@
     (let [screen (update! screen :renderer (stage) :camera (orthographic) :world (box-2d 0 0))]
       (update! screen :goals-1 0 :goals-2 0)
       (width! screen 640)
-      [(create-ball screen 75 100)
-       (create-arrow)
-       (create-lower-bounds screen)
+      [(create-lower-bounds screen)
        (create-upper-bounds screen)
        (create-left-bounds screen)
-       (create-right-bounds screen)]))
+       (create-right-bounds screen)
+       (create-ball screen 75 100)
+       (create-arrow)]))
+
+  :on-touch-down
+  (fn [screen entities]
+    (let [arrow (find-first :arrow? entities)
+          ball (find-first :ball? entities)
+          impulse (:vector arrow)]
+      (body! ball :apply-linear-impulse (vector-2! impulse :scl 1000.0 1000.0)
+             (body! ball :get-world-center) true))
+    nil)
 
   :on-key-down
   (fn [{:keys [key] :as screen} entities]
