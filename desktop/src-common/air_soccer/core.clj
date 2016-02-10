@@ -101,23 +101,22 @@
 
 (defn update-arrow! [{:keys [active-player] :as screen} entities]
   (map (fn [{:keys [arrow? width height] :as e}]
-         (if arrow?
-           (let [{x-ball :x y-ball :y radius :radius :as ball} (find-first :ball? entities)
-                 pos-ball (vector-2! (body! ball :get-position) :cpy)
-                 pos-ball (vector-2! pos-ball :add radius radius)
-                 {mouse-x :x mouse-y :y} (input->screen screen (input! :get-x) (input! :get-y))
-                 mouse-pos (vector-2 mouse-x mouse-y)
-                 sub (vector-2! (vector-2! pos-ball :cpy) :sub mouse-pos)                 
-                 angle (vector-2! sub :angle)
-                 ]
-             (assoc e
-                    :x (+ (x pos-ball) (/ width 2))
-                    :y (- (y pos-ball) (/ height 2))
-                    :angle angle
-                    :vector sub
-                    :origin-x (- (/ width 2))
-                    :origin-y (/ height 2)))
-           e)) entities))
+         (let [{x-ball :x y-ball :y radius :radius :as ball} (find-first :ball? entities)]
+           (if (and arrow? ball)
+             (let [pos-ball (vector-2! (body! ball :get-position) :cpy)
+                   pos-ball (vector-2! pos-ball :add radius radius)
+                   {mouse-x :x mouse-y :y} (input->screen screen (input! :get-x) (input! :get-y))
+                   mouse-pos (vector-2 mouse-x mouse-y)
+                   sub (vector-2! (vector-2! pos-ball :cpy) :sub mouse-pos)                 
+                   angle (vector-2! sub :angle)]
+               (assoc e
+                      :x (+ (x pos-ball) (/ width 2))
+                      :y (- (y pos-ball) (/ height 2))
+                      :angle angle
+                      :vector sub
+                      :origin-x (- (/ width 2))
+                      :origin-y (/ height 2)))
+             e))) entities))
 
 (defscreen text-screen
   :on-show
@@ -184,11 +183,11 @@
     (let [screen (update! screen :renderer (stage) :camera (orthographic) :world (box-2d 0 0))]
       (update! screen :goals-1 0 :goals-2 0)
       (width! screen 640)
-      [(create-lower-bounds screen)
+      [(create-ball screen 75 100)
+       (create-lower-bounds screen)
        (create-upper-bounds screen)
        (create-left-bounds screen)
        (create-right-bounds screen)
-       (create-ball screen 75 100)
        (create-arrow)]))
 
   :on-touch-down
