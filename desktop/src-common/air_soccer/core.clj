@@ -13,8 +13,7 @@
 (defn create-arrow []
   (let [t (texture "Arrow.png")]
     (assoc t :arrow? true
-           :x 36 :y 64
-           :scale-x 2 :scale-y 2)))
+           :x 36 :y 64)))
 
 (defn create-ball [screen x y]
   (let [t (texture "Ball.png")
@@ -27,8 +26,7 @@
         anim (animation 0.2 tiles :set-play-mode (play-mode :loop))
         
         body (add-body! screen (body-def :dynamic))
-        shape (circle-shape :set-radius radius
-                            :set-position (vector-2 radius radius))
+        shape (circle-shape :set-radius radius)
         fixture (fixture-def :density 0.1 :friction 0 :restitution 0 :shape shape)]
     (body! body :create-fixture fixture)
     (body-position! body x y 0)
@@ -98,21 +96,19 @@
        :spinning? false))
     e))
 
-(defn deg->ccw [deg]
-  (if (neg? deg)
-    (- 360 deg)
-    deg))
-
 (defn update-arrow! [{:keys [active-player] :as screen} entities]
   (map (fn [{:keys [arrow?] :as e}]
          (if arrow?
-           (let [{:keys [x y width] :as ball} (find-first :ball? entities)
-                 pos (body! ball :get-position)
+           (let [{x-ball :x y-ball :y :as ball} (find-first :ball? entities)
+                 pos-ball (vector-2! (body! ball :get-position) :cpy)
+                 pos-ball (vector-2! pos-ball :add 12 12)
                  {mouse-x :x mouse-y :y} (input->screen screen (input! :get-x) (input! :get-y))
                  mouse-pos (vector-2 mouse-x mouse-y)
-                 angle (vector-2! pos :sub mouse-pos)
-                 angle (vector-2! angle :angle)]
-             (assoc e :x x :y y :angle angle))
+                 sub (vector-2! (vector-2! pos-ball :cpy) :sub mouse-pos)                 
+                 angle (vector-2! sub :angle)
+                 ]
+             (println pos-ball)
+             (assoc e :x (x pos-ball) :y (- (y pos-ball) 7) :angle angle :origin-x 0 :origin-y 7))
            e)) entities))
 
 (defscreen text-screen
@@ -257,7 +253,7 @@
   
 
   ;; RESET TO MAIN SCREEN  
-  (on-gl (set-screen! air-soccer-game main-screen))
+  (on-gl (set-screen! air-soccer-game main-screen text-screen))
 
   (require '[play-clj.repl :as repl])
   (repl/e main-screen)
