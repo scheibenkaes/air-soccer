@@ -11,9 +11,11 @@
 (def ^:const border-strength 5)
 
 (defn create-arrow []
-  (let [t (texture "Arrow.png")]
+  (let [t (texture "Arrow.png")
+        width (texture! t :get-region-width)
+        height (texture! t :get-region-height)]
     (assoc t :arrow? true
-           :x 36 :y 64)))
+           :x 36 :y 64 :width width :height height)))
 
 (defn create-ball [screen x y]
   (let [t (texture "Ball.png")
@@ -26,7 +28,7 @@
         anim (animation 0.2 tiles :set-play-mode (play-mode :loop))
         
         body (add-body! screen (body-def :dynamic))
-        shape (circle-shape :set-radius radius)
+        shape (circle-shape :set-radius radius :set-position (vector-2 radius radius))
         fixture (fixture-def :density 0.1 :friction 0 :restitution 0 :shape shape)]
     (body! body :create-fixture fixture)
     (body-position! body x y 0)
@@ -37,6 +39,7 @@
            :spinning? false
            :tiles tiles
            :ball? true
+           :radius radius
            :possesion :player1)))
 
 (defn create-rect-body!
@@ -97,18 +100,22 @@
     e))
 
 (defn update-arrow! [{:keys [active-player] :as screen} entities]
-  (map (fn [{:keys [arrow?] :as e}]
+  (map (fn [{:keys [arrow? width height] :as e}]
          (if arrow?
-           (let [{x-ball :x y-ball :y :as ball} (find-first :ball? entities)
+           (let [{x-ball :x y-ball :y radius :radius :as ball} (find-first :ball? entities)
                  pos-ball (vector-2! (body! ball :get-position) :cpy)
-                 pos-ball (vector-2! pos-ball :add 12 12)
+                 pos-ball (vector-2! pos-ball :add radius radius)
                  {mouse-x :x mouse-y :y} (input->screen screen (input! :get-x) (input! :get-y))
                  mouse-pos (vector-2 mouse-x mouse-y)
                  sub (vector-2! (vector-2! pos-ball :cpy) :sub mouse-pos)                 
                  angle (vector-2! sub :angle)
                  ]
-             (println pos-ball)
-             (assoc e :x (x pos-ball) :y (- (y pos-ball) 7) :angle angle :origin-x 0 :origin-y 7))
+             (assoc e
+                    :x (+ (x pos-ball) (/ width 2))
+                    :y (- (y pos-ball) (/ height 2))
+                    :angle angle
+                    :origin-x (- (/ width 2))
+                    :origin-y (/ height 2)))
            e)) entities))
 
 (defscreen text-screen
