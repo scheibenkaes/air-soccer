@@ -216,15 +216,7 @@
     (->> entities
          (map (fn [{:keys [ball?] :as e}]
                 (if ball?
-                  (cond 
-                    (= key (key-code :space))
-                    (do
-                      e)
-                    (= key (key-code :enter))
-                    (assoc (doto e
-                             (body! :apply-linear-impulse (vector-2 500000 -1200000)
-                                    (body! e :get-world-center) true))
-                           :spinning? true)
+                  (cond
                     (= key (key-code :s))
                     (stop-ball! screen e)
                     (= key (key-code :r))
