@@ -13,15 +13,6 @@
 (def ^:const font-32 "Fipps-32.fnt")
 (def ^:const font-16 "Fipps-16.fnt")
 
-(defn create-goal-scored-text []
-  (let [x (/ (game :width) 2)
-        y (/ (game :height) 2)
-        l (label "GOAL!" (style :label (bitmap-font font-32) (color :red))
-                 :set-alignment (align :center))
-        x (- x (/ (label! l :get-pref-width) 2))]
-    (assoc l
-           :label/goal-scored? true :x x :y y)))
-
 (defn create-arrow []
   (let [t (texture "Arrow.png")
         width (texture! t :get-region-width)
@@ -140,6 +131,15 @@
            :goals-1 0 :goals-2 0
            :x (- x (/ (label! l :get-pref-width) 2))
            :y y)))
+
+(defn create-goal-scored-text []
+  (let [x (/ (game :width) 2)
+        y (/ (game :height) 2)
+        l (label "GOAL!!!" (style :label (bitmap-font font-32) (color :red))
+                 :set-alignment (align :center))
+        x (- x (/ (label! l :get-pref-width) 2))]
+    (assoc l
+           :label/goal-scored? true :x x :y y)))
 
 (defscreen text-screen
   :on-show
