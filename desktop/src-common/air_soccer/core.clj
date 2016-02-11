@@ -148,15 +148,22 @@
     [(assoc (label "0" (color :red))
             :fps? true
             :x 5 :y 0)
-     (create-score-indicator)
-     (create-goal-scored-text)])
+     (create-score-indicator)])
 
+  :on-timer
+  (fn [screen entities]
+    (when (= :remove-goal-indicator (:id screen))
+      (remove :label/goal-scored? entities)))
+  
   :on-goal-scored
   (fn [{:keys [goals-1 goals-2] :as screen} entities]
-    (map (fn [e]
-           (if (:scoreboard? e)
-             (assoc e :goals-1 goals-1 :goals-2 goals-2)
-             e)) entities))
+    (add-timer! screen :remove-goal-indicator 3)
+    (->> entities
+     (map (fn [e]
+            (if (:scoreboard? e)
+              (assoc e :goals-1 goals-1 :goals-2 goals-2)
+              e)))
+     (cons (create-goal-scored-text))))
   
   :on-render
   (fn [screen entities]
