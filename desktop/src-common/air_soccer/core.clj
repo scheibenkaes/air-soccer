@@ -11,6 +11,7 @@
 (def ^:const border-strength 5)
 
 (def ^:const font-32 "Fipps-32.fnt")
+(def ^:const font-16 "Fipps-16.fnt")
 
 (defn create-goal-scored-text []
   (let [x (/ (game :width) 2)
@@ -129,6 +130,17 @@
                       :origin-y (/ height 2)))
              e))) entities))
 
+(defn create-score-indicator []
+  (let [x (/ (game :width) 2)
+        y (- (game :height) 35)
+        l (label "0:0" (style :label (style :label (bitmap-font font-16) (color :red)))
+                 :set-alignment (align :center))]
+    (assoc l
+           :scoreboard? true
+           :goals-1 0 :goals-2 0
+           :x (- x (/ (label! l :get-pref-width) 2))
+           :y y)))
+
 (defscreen text-screen
   :on-show
   (fn [screen entities]
@@ -136,11 +148,7 @@
     [(assoc (label "0" (color :red))
             :fps? true
             :x 5 :y 0)
-     (assoc (label "0:0" (color :red) :set-alignment (align :center))
-            :scoreboard? true
-            :goals-1 0 :goals-2 0
-            :x (/ (game :width) 2)
-            :y (- (game :height) 25))
+     (create-score-indicator)
      (create-goal-scored-text)])
 
   :on-goal-scored
