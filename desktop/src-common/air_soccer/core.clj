@@ -159,11 +159,11 @@
   (fn [{:keys [goals-1 goals-2] :as screen} entities]
     (add-timer! screen :remove-goal-indicator 3)
     (->> entities
-     (map (fn [e]
-            (if (:scoreboard? e)
-              (assoc e :goals-1 goals-1 :goals-2 goals-2)
-              e)))
-     (cons (create-goal-scored-text))))
+         (map (fn [e]
+                (if (:scoreboard? e)
+                  (assoc e :goals-1 goals-1 :goals-2 goals-2)
+                  e)))
+         (cons (create-goal-scored-text))))
   
   :on-render
   (fn [screen entities]
@@ -193,9 +193,9 @@
   (map (fn [{:keys [animation ball? spinning?] :as e}]
          (if ball?
            (if spinning?
-            (let [t (animation->texture screen animation)]
-              (merge e t))
-            e)
+             (let [t (animation->texture screen animation)]
+               (merge e t))
+             e)
            e)) entities))
 
 (defn score-for! [screen player]
@@ -224,12 +224,15 @@
 
   :on-touch-down
   (fn [screen entities]
-    (let [arrow (find-first :arrow? entities)
-          ball (find-first :ball? entities)
-          impulse (:vector arrow)]
-      (body! ball :apply-linear-impulse (vector-2! impulse :scl 1000.0 1000.0)
-             (body! ball :get-world-center) true))
-    nil)
+    (map (fn [e]
+           (if (:ball? e)
+             (let [arrow (find-first :arrow? entities)
+                   ball e
+                   impulse (:vector arrow)]
+               (body! ball :apply-linear-impulse (vector-2! impulse :scl 1000.0 1000.0)
+                      (body! ball :get-world-center) true)
+               (assoc e :spinning? true))
+             e)) entities))
 
   :on-key-down
   (fn [{:keys [key] :as screen} entities]
