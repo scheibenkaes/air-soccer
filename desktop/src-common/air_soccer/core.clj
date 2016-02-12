@@ -124,7 +124,7 @@
 (defn create-score-indicator []
   (let [x (/ (game :width) 2)
         y (- (game :height) 35)
-        l (label "0:0" (style :label (style :label (bitmap-font font-16) (color :red)))
+        l (label "0:0" (style :label (style :label (bitmap-font font-16) (color :white)))
                  :set-alignment (align :center))]
     (assoc l
            :scoreboard? true
@@ -135,7 +135,7 @@
 (defn create-goal-scored-text []
   (let [x (/ (game :width) 2)
         y (/ (game :height) 2)
-        l (label "GOAL!!!" (style :label (bitmap-font font-32) (color :red))
+        l (label "GOAL!!!" (style :label (bitmap-font font-32) (color :white))
                  :set-alignment (align :center))
         x (- x (/ (label! l :get-pref-width) 2))]
     (assoc l
@@ -204,13 +204,18 @@
         {:keys [goals-1 goals-2]} (update! screen k score)]
     (screen! text-screen :on-goal-scored :goals-1 goals-1 :goals-2 goals-2)))
 
+(defn create-pitch []
+  (let [t (texture "Pitch.png")]
+    (assoc t :pitch? true)))
+
 (defscreen main-screen
   :on-show
   (fn [screen entities]
     (let [screen (update! screen :renderer (stage) :camera (orthographic) :world (box-2d 0 0))]
       (update! screen :goals-1 0 :goals-2 0)
       (width! screen 640)
-      [(create-ball screen 75 100)
+      [(create-pitch)
+       (create-ball screen 75 100)
        (create-lower-bounds screen)
        (create-upper-bounds screen)
        (create-left-bounds screen)
