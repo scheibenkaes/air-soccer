@@ -23,6 +23,9 @@
 (defn- center-y []
   (-> (game :height) (/ 2)))
 
+(defn- center-x []
+  (-> (game :width) (/ 2)))
+
 (defn create-left-goalie []
   (let [t (texture "Goalie.png")]
     (assoc t :left-goalie? true
@@ -33,6 +36,8 @@
         x (- (game :width) 60)]
     (assoc t :left-goalie? true
            :x x :y (center-y))))
+
+(def ^:const ball-damping 0.03)
 
 (defn create-ball [screen x y]
   (let [t (texture "Ball.png")
@@ -46,8 +51,9 @@
         
         body (add-body! screen (body-def :dynamic))
         shape (circle-shape :set-radius radius :set-position (vector-2 radius radius))
-        fixture (fixture-def :density 0.1 :friction 0 :restitution 0 :shape shape)]
+        fixture (fixture-def :density 0.1 :friction 0 :restitution 0  :shape shape)]
     (body! body :create-fixture fixture)
+    (body! body :set-linear-damping ball-damping)
     (body-position! body x y 0)
     (assoc (first tiles)
            :body body
@@ -203,13 +209,30 @@
 (defn restart-game! []
   (on-gl (set-screen! air-soccer-game main-screen text-screen)))
 
+
+(defn- animate-spinning-ball [screen {:keys [animation spinning?] :as e}]
+  (if spinning?
+    (let [t (animation->texture screen animation)]
+      (merge e t))
+    e))
+
+(def ^:const stop-ball-at "Length of a vector" 1600)
+
+(defn ball-too-slow?
+  "When the ball is getting so slow we want to stop it."
+  [v]
+  (-> (vector-2! v :len2) (< stop-ball-at)))
+
+(defn- stop-ball-when-too-slow [screen {:keys [] :as e}]
+  (let [speed (body! e :get-linear-velocity)]
+    (if (ball-too-slow? speed)
+      (stop-ball! screen e)
+      e)))
+
 (defn animate-ball [screen entities]
-  (map (fn [{:keys [animation ball? spinning?] :as e}]
+  (map (fn [{:keys [ball? spinning?] :as e}]
          (if ball?
-           (if spinning?
-             (let [t (animation->texture screen animation)]
-               (merge e t))
-             e)
+           (->> e (animate-spinning-ball screen) (stop-ball-when-too-slow screen))
            e)) entities))
 
 (defn score-for! [screen player]
@@ -222,19 +245,9 @@
   (let [t (texture "Pitch.png")]
     (assoc t :pitch? true)))
 
-(def ^:const slow-ball-stop-clock 1)
-
-(def ^:const stop-ball-at "Length of a vector" 1300)
-
-(defn ball-to-slow?
-  "When the ball is getting so slow we want to stop it."
-  [v]
-  (-> (vector-2! v :len2) (< stop-ball-at)))
-
 (defscreen main-screen
   :on-show
   (fn [screen entities]
-    (add-timer! screen :stop-slow-ball slow-ball-stop-clock slow-ball-stop-clock)
     (let [screen (update! screen :renderer (stage) :camera (orthographic) :world (box-2d 0 0))]
       (update! screen :goals-1 0 :goals-2 0)
       (width! screen 640)
@@ -253,10 +266,7 @@
     (when (= id :stop-slow-ball)
       (map (fn [e]
              (if (:ball? e)
-               (let [speed (body! e :get-linear-velocity)]
-                 (if (ball-to-slow? speed)
-                   (stop-ball! screen e)
-                   e))         
+                        
                e)) entities)))
 
   :on-touch-down
