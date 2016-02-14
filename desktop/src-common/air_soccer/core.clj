@@ -13,6 +13,13 @@
 (def ^:const font-32 "Fipps-32.fnt")
 (def ^:const font-16 "Fipps-16.fnt")
 
+(def color-1-int 0x9bbc0f00)
+
+(def color-1 (color color-1-int))
+(def color-2 (color 0x8bac0f00))
+(def color-3 (color 0x30623000))
+(def color-4 (color 0x0f380f00))
+
 (defn create-arrow []
   (let [t (texture "Arrow.png")
         width (texture! t :get-region-width)
@@ -26,16 +33,7 @@
 (defn- center-x []
   (-> (game :width) (/ 2)))
 
-(defn create-left-goalie []
-  (let [t (texture "Goalie.png")]
-    (assoc t :left-goalie? true
-           :x 20 :y (center-y))))
-
-(defn create-right-goalie []
-  (let [t (texture "Goalie.png" :flip true false)
-        x (- (game :width) 60)]
-    (assoc t :left-goalie? true
-           :x x :y (center-y))))
+(def goalie-body-size [24 12])
 
 (def ^:const ball-damping 0.03)
 
@@ -79,16 +77,20 @@
          (body! body :create-fixture))
     body))
 
-(def color-1-int 0x9bbc0f00)
-
-(def color-1 (color color-1-int))
-(def color-2 (color 0x8bac0f00))
-(def color-3 (color 0x30623000))
-(def color-4 (color 0x0f380f00))
-
 (defn create-rect [width height]
   (let [s (shape :filled :set-color color-1 :rect 0 0 width height)]
     s))
+
+(defn create-left-goalie []
+  (let [t (texture "Goalie.png")]
+    (assoc t :left-goalie? true
+           :x 20 :y (center-y))))
+
+(defn create-right-goalie []
+  (let [t (texture "Goalie.png" :flip true false)
+        x (- (game :width) 60)]
+    (assoc t :right-goalie? true
+           :x x :y (center-y))))
 
 (defn create-lower-bounds [screen]
   (let [s (create-rect 640 border-strength)
@@ -269,12 +271,7 @@
        (create-arrow)]))
 
   :on-timer
-  (fn [{id :id :as screen} entities]
-    (when (= id :stop-slow-ball)
-      (map (fn [e]
-             (if (:ball? e)
-                        
-               e)) entities)))
+  (fn [{id :id :as screen} entities])
 
   :on-touch-down
   (fn [screen entities]
