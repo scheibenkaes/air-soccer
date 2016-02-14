@@ -20,6 +20,20 @@
     (assoc t :arrow? true
            :x 36 :y 64 :width width :height height)))
 
+(defn- center-y []
+  (-> (game :height) (/ 2)))
+
+(defn create-left-goalie []
+  (let [t (texture "Goalie.png")]
+    (assoc t :left-goalie? true
+           :x 20 :y (center-y))))
+
+(defn create-right-goalie []
+  (let [t (texture "Goalie.png" :flip true false)
+        x (- (game :width) 60)]
+    (assoc t :left-goalie? true
+           :x x :y (center-y))))
+
 (defn create-ball [screen x y]
   (let [t (texture "Ball.png")
         size 24
@@ -208,9 +222,19 @@
   (let [t (texture "Pitch.png")]
     (assoc t :pitch? true)))
 
+(def ^:const slow-ball-stop-clock 1)
+
+(def ^:const stop-ball-at "Length of a vector" 1300)
+
+(defn ball-to-slow?
+  "When the ball is getting so slow we want to stop it."
+  [v]
+  (-> (vector-2! v :len2) (< stop-ball-at)))
+
 (defscreen main-screen
   :on-show
   (fn [screen entities]
+    (add-timer! screen :stop-slow-ball slow-ball-stop-clock slow-ball-stop-clock)
     (let [screen (update! screen :renderer (stage) :camera (orthographic) :world (box-2d 0 0))]
       (update! screen :goals-1 0 :goals-2 0)
       (width! screen 640)
@@ -220,7 +244,20 @@
        (create-upper-bounds screen)
        (create-left-bounds screen)
        (create-right-bounds screen)
+       (create-left-goalie)
+       (create-right-goalie)
        (create-arrow)]))
+
+  :on-timer
+  (fn [{id :id :as screen} entities]
+    (when (= id :stop-slow-ball)
+      (map (fn [e]
+             (if (:ball? e)
+               (let [speed (body! e :get-linear-velocity)]
+                 (if (ball-to-slow? speed)
+                   (stop-ball! screen e)
+                   e))         
+               e)) entities)))
 
   :on-touch-down
   (fn [screen entities]
