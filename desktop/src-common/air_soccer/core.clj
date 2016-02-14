@@ -79,8 +79,15 @@
          (body! body :create-fixture))
     body))
 
+(def color-1-int 0x9bbc0f00)
+
+(def color-1 (color color-1-int))
+(def color-2 (color 0x8bac0f00))
+(def color-3 (color 0x30623000))
+(def color-4 (color 0x0f380f00))
+
 (defn create-rect [width height]
-  (let [s (shape :filled :set-color (color :green) :rect 0 0 width height)]
+  (let [s (shape :filled :set-color color-1 :rect 0 0 width height)]
     s))
 
 (defn create-lower-bounds [screen]
@@ -144,7 +151,7 @@
 (defn create-score-indicator []
   (let [x (/ (game :width) 2)
         y (- (game :height) 35)
-        l (label "0:0" (style :label (style :label (bitmap-font font-16) (color :white)))
+        l (label "0:0" (style :label (style :label (bitmap-font font-16) (color :green)))
                  :set-alignment (align :center))]
     (assoc l
            :scoreboard? true
@@ -155,7 +162,7 @@
 (defn create-goal-scored-text []
   (let [x (/ (game :width) 2)
         y (/ (game :height) 2)
-        l (label "GOAL!!!" (style :label (bitmap-font font-32) (color :white))
+        l (label "GOAL!!!" (style :label (bitmap-font font-32) (color :green))
                  :set-alignment (align :center))
         x (- x (/ (label! l :get-pref-width) 2))]
     (assoc l
