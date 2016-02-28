@@ -9,6 +9,13 @@
 
 (declare air-soccer-game main-screen)
 
+1(defn play-sound
+  "Plays a single sound via its id"
+  [sound-id]
+  (let [sample (case sound-id
+                 :goal (sound "sounds/goal.ogg"))]
+    (sound! sample :play)))
+
 (defn set-current-player! [screen player]
   (update! screen :current-player player))
 
@@ -81,6 +88,7 @@
   (let [k (if (= player :player-1) :goals-1 :goals-2)
         score (inc (get screen k))
         {:keys [goals-1 goals-2]} (update! screen k score)]
+    (play-sound :goal)
     (screen! text-screen/text-screen :on-goal-scored :goals-1 goals-1 :goals-2 goals-2)))
 
 (defn center-ball
