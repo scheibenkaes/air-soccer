@@ -125,7 +125,7 @@
           s (second-entity screen entities)]
       (when-let [goal (:goal? f)]
         (on-goal-scoring
-         (assoc screen :player (case goal :left :player-1 :player-2))
+         (assoc screen :player (case goal :left :player-2 :player-1))
          entities))))
   
   :on-timer
