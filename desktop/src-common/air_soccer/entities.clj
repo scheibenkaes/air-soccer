@@ -54,12 +54,15 @@
          (body! body :create-fixture))
     body))
 
-(def color-1-int 0x9bbc0f)
 
-(def color-1 (color color-1-int))
-(def color-2 (color 0x8bac0f00))
-(def color-3 (color 0x30623000))
-(def color-4 (color 0x0f380f00))
+(defn rgb->color [r g b]
+  (let [conv (fn [x] (-> x (/ 256.0) float))]
+    (color (conv r) (conv g) (conv b) 1.0)))
+
+(def color-1 (rgb->color 155 188 15))
+(def color-2 (rgb->color 139 172 15))
+(def color-3 (rgb->color 48 98 48))
+(def color-4 (rgb->color 15 56 15))
 
 (def ^:const goal-size 64)
 (def ^:const border-strength 5)
