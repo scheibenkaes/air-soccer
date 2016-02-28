@@ -136,3 +136,7 @@
   (let [lower (create-side-bound screen (- 640 border-strength) 0)
         upper (create-side-bound screen (- 640 border-strength) (+ (/ 320 2) (/ goal-size 2)))]
     [lower upper]))
+
+(defn create-pitch []
+  (let [t (texture "Pitch.png")]
+    (assoc t :pitch? true)))

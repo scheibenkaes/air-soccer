@@ -99,10 +99,6 @@
       (score-for! screen)
       entities)))
 
-(defn create-pitch []
-  (let [t (texture "Pitch.png")]
-    (assoc t :pitch? true)))
-
 (defscreen main-screen
   :on-show
   (fn [screen entities]
