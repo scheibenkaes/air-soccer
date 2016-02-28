@@ -68,13 +68,13 @@
     (if (and spinning?
              (not= (vector-2 0 0) speed)
              (ball-too-slow? speed))
-      (stop-ball! screen e :current-player (rand-player))
+      [(stop-ball! screen e :current-player (rand-player)) (create-arrow)]
       e)))
 
 (defn animate-ball [screen entities]
   (map (fn [{:keys [ball? spinning?] :as e}]
          (if ball?
-           (->> e (stop-ball-when-too-slow screen) (animate-spinning-ball screen))
+           (->> e (animate-spinning-ball screen) (stop-ball-when-too-slow screen))
            e)) entities))
 
 (defn score-for! [{:keys [player] :as screen}]
@@ -110,12 +110,13 @@
     ;; needed as box2d does not like changing a body's position
     ;; while the world is locked
     (add-timer! screen :after-goal 0.01)
-    (mapv (fn [{:keys [ball?] :as e}]
-            (if ball?
-              (do
-                (score-for! screen)
-                (stop-ball! screen e :current-player (other-guy player)))
-              e)) entities)))
+    (conj (mapv (fn [{:keys [ball?] :as e}]
+                  (if ball?
+                    (do
+                      (score-for! screen)
+                      (stop-ball! screen e :current-player (other-guy player)))
+                    e)) entities)
+          (create-arrow))))
 
 (defscreen main-screen
   :on-show
@@ -152,40 +153,42 @@
 
   :on-touch-down
   (fn [screen entities]
-    (map (fn [e]
-           (if (:ball? e)
-             (let [arrow (find-first :arrow? entities)
-                   ball e
-                   impulse (:vector arrow)]
-               (body! ball :apply-linear-impulse (vector-2! impulse :scl 1000.0 1000.0)
-                      (body! ball :get-world-center) true)
-               (assoc e :spinning? true))
-             e)) entities))
+    (when-let [arrow (find-first :arrow? entities)]
+      (->> entities
+           (mapv (fn [e]
+                   (if (:ball? e)
+                     (let [ball e
+                           impulse (:vector arrow)]
+                       (body! ball :apply-linear-impulse (vector-2! impulse :scl 1000.0 1000.0)
+                              (body! ball :get-world-center) true)
+                       (assoc e :spinning? true))
+                     e)))
+           (remove :arrow?))))
 
   :on-key-down
   (fn [{:keys [key] :as screen} entities]
     (->> entities
-         (map (fn [{:keys [ball?] :as e}]
-                (if ball?
-                  (cond
-                    (= key (key-code :s))
-                    (do
-                      (stop-ball! screen e :current-player (rand-player)))
-                    (= key (key-code :r))
-                    (restart-game!)
+         (mapv (fn [{:keys [ball?] :as e}]
+                 (if ball?
+                   (cond
+                     (= key (key-code :s))
+                     (do
+                       [(stop-ball! screen e :current-player (rand-player)) (create-arrow)])
+                     (= key (key-code :r))
+                     (restart-game!)
 
-                    (= key (key-code :num-1))
-                    (do
-                      (score-for! (assoc screen :player :player-1))
-                      e)
-                    
-                    (= key (key-code :num-2))
-                    (do
-                      (score-for! (assoc screen :player :player-2))
-                      e)
+                     (= key (key-code :num-1))
+                     (do
+                       (score-for! (assoc screen :player :player-1))
+                       e)
+                     
+                     (= key (key-code :num-2))
+                     (do
+                       (score-for! (assoc screen :player :player-2))
+                       e)
 
-                    :else e) 
-                  e)))))
+                     :else e) 
+                   e)))))
   
   :on-render
   (fn [screen entities]
@@ -194,6 +197,7 @@
          (step! screen)
          (update-arrow! screen)
          (animate-ball screen)
+         flatten
          (render! screen))))
 
 (defscreen error-screen
