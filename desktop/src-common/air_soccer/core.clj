@@ -78,10 +78,12 @@
   as the world is locked at this moment and setting a position will fail
   at this point"
   [screen entities]
-  (map (fn [{:keys [ball?] :as e}]
+  (map (fn [{:keys [ball? width height angle] :as e}]
          (if ball?
-           (let [x (center-x)
-                 y (center-y)]
+           (let [x (- (center-x)
+                      (/ width 2))
+                 y (- (center-y)
+                      (/ height 2))]
              (doto e
                (body-position! x y (:angle e))))
            e)) entities))
