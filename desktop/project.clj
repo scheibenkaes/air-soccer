@@ -12,7 +12,7 @@
                  [com.badlogicgames.gdx/gdx-platform "1.8.0"
                   :classifier "natives-desktop"]
                  [org.clojure/clojure "1.7.0"]
-                 [play-clj "1.0.0"]]
+                 [play-clj "1.1.0-SNAPSHOT"]]
   
   :source-paths ["src" "src-common"]
   :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]

@@ -3,17 +3,15 @@
             [play-clj.g2d :refer :all]
             [play-clj.math :refer :all]
             [play-clj.g2d-physics :refer :all]
-            [play-clj.ui :refer :all]))
+            [play-clj.ui :refer :all]
+            [air-soccer.screens.text-screen :as text-screen]))
 
-(declare air-soccer-game main-screen text-screen)
+(declare air-soccer-game main-screen)
 
 (def ^:const goal-size 64)
 (def ^:const border-strength 5)
 
-(def ^:const font-32 "Fipps-32.fnt")
-(def ^:const font-16 "Fipps-16.fnt")
-
-(def color-1-int 0x9bbc0f00)
+(def color-1-int 0x9bbc0f)
 
 (def color-1 (color color-1-int))
 (def color-2 (color 0x8bac0f00))
@@ -77,9 +75,29 @@
          (body! body :create-fixture))
     body))
 
-(defn create-rect [width height]
-  (let [s (shape :filled :set-color color-1 :rect 0 0 width height)]
+(defn create-rect [width height & {color :color :or {color color-1}}]
+  (let [s (shape :filled :set-color color :rect 0 0 width height)]
     s))
+
+(defn create-left-goal [screen]
+  (let [w 1
+        h (/ goal-size 2)
+        s (create-rect w h :color (color :red))
+        b (create-rect-body! screen w h)]
+    (body-position! b 0 (- (center-y) (/ h 2)) 0)
+    (assoc s
+           :body b
+           :goal? :left)))
+
+(defn create-right-goal [screen]
+  (let [w 1
+        h (/ goal-size 2)
+        s (create-rect w h :color (color :red))
+        b (create-rect-body! screen w h)]
+    (body-position! b (- (game :width) w) (- (center-y) (/ h 2)) 0)
+    (assoc s
+           :body b
+           :goal? :right)))
 
 (defn create-left-goalie []
   (let [t (texture "Goalie.png")]
@@ -150,73 +168,8 @@
                       :origin-y (/ height 2)))
              e))) entities))
 
-(defn create-score-indicator []
-  (let [x (/ (game :width) 2)
-        y (- (game :height) 35)
-        l (label "0:0" (style :label (style :label (bitmap-font font-16) (color :green)))
-                 :set-alignment (align :center))]
-    (assoc l
-           :scoreboard? true
-           :goals-1 0 :goals-2 0
-           :x (- x (/ (label! l :get-pref-width) 2))
-           :y y)))
-
-(defn create-goal-scored-text []
-  (let [x (/ (game :width) 2)
-        y (/ (game :height) 2)
-        l (label "GOAL!!!" (style :label (bitmap-font font-32) (color :green))
-                 :set-alignment (align :center))
-        x (- x (/ (label! l :get-pref-width) 2))]
-    (assoc l
-           :label/goal-scored? true :x x :y y)))
-
-(defscreen text-screen
-  :on-show
-  (fn [screen entities]
-    (update! screen :renderer (stage))
-    [(assoc (label "0" (color :red))
-            :fps? true
-            :x 5 :y 0)
-     (create-score-indicator)])
-
-  :on-timer
-  (fn [screen entities]
-    (when (= :remove-goal-indicator (:id screen))
-      (remove :label/goal-scored? entities)))
-  
-  :on-goal-scored
-  (fn [{:keys [goals-1 goals-2] :as screen} entities]
-    (add-timer! screen :remove-goal-indicator 3)
-    (->> entities
-         (map (fn [e]
-                (if (:scoreboard? e)
-                  (assoc e :goals-1 goals-1 :goals-2 goals-2)
-                  e)))
-         (cons (create-goal-scored-text))))
-  
-  :on-render
-  (fn [screen entities]
-    (letfn [(render-fps [entities]
-              (map (fn [e]
-                     (if (:fps? e)
-                       (doto e
-                         (label! :set-text (str (game :fps))))
-                       e)) entities))
-            (render-scoreboard [entities]
-              (map (fn [e]
-                     (if (:scoreboard? e)
-                       (let [{:keys [goals-1 goals-2] :or {goals-1 0
-                                                           goals-2 0}} e
-                             s (str goals-1 ":" goals-2)]
-                         (doto e (label! :set-text s)))
-                       e)) entities))]
-      (->> entities
-           (render-fps)
-           (render-scoreboard)
-           (render! screen)))))
-
 (defn restart-game! []
-  (on-gl (set-screen! air-soccer-game main-screen text-screen)))
+  (on-gl (set-screen! air-soccer-game main-screen text-screen/text-screen)))
 
 
 (defn- animate-spinning-ball [screen {:keys [animation spinning?] :as e}]
@@ -248,7 +201,7 @@
   (let [k (if (= player :player-1) :goals-1 :goals-2)
         score (inc (get screen k))
         {:keys [goals-1 goals-2]} (update! screen k score)]
-    (screen! text-screen :on-goal-scored :goals-1 goals-1 :goals-2 goals-2)))
+    (screen! text-screen/text-screen :on-goal-scored :goals-1 goals-1 :goals-2 goals-2)))
 
 (defn create-pitch []
   (let [t (texture "Pitch.png")]
@@ -268,8 +221,18 @@
        (create-right-bounds screen)
        (create-left-goalie)
        (create-right-goalie)
+       (create-left-goal screen)
+       (create-right-goal screen)
        (create-arrow)]))
 
+  :on-begin-contact
+  (fn [screen entities]
+    (let [f (first-entity screen entities)
+          s (second-entity screen entities)]
+      (when-let [goal (:goal? f)]
+        (score-for! screen (case goal :left :player-1 :player-2))
+        nil)))
+  
   :on-timer
   (fn [{id :id :as screen} entities])
 
@@ -332,7 +295,7 @@
 (defgame air-soccer-game
   :on-create
   (fn [this]
-    (set-screen! this main-screen text-screen)))
+    (set-screen! this main-screen text-screen/text-screen)))
 
 (comment
   (set-screen-wrapper! (fn [screen screen-fn]
@@ -346,10 +309,11 @@
     (launcher/-main))
   
 
-  ;; RESET TO MAIN SCREEN  
-  (on-gl (set-screen! air-soccer-game main-screen text-screen))
 
   (require '[play-clj.repl :as repl])
-  (repl/e main-screen)
+  (filter #(nil? (:body %)) (repl/e main-screen))
 
+  
+  ;; RESET TO MAIN SCREEN  
+  (on-gl (set-screen! air-soccer-game main-screen text-screen/text-screen))
   )
