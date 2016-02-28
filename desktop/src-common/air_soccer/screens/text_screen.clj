@@ -30,6 +30,11 @@
   (let [l (label "TBD" (style :label (bitmap-font font-16) (color :green)))]
     (assoc l :label/player-indicator? true :x 10 :y (- (game :height) 35))))
 
+(defn update-player-indicator [current-player entities]
+  (let [l (find-first :label/player-indicator? entities)]
+    (label! l :set-text (str current-player)))
+  nil)
+
 (defscreen text-screen
   :on-show
   (fn [screen entities]
@@ -44,6 +49,11 @@
   (fn [screen entities]
     (when (= :remove-goal-indicator (:id screen))
       (remove :label/goal-scored? entities)))
+
+  :on-player-change
+  (fn [screen entities]
+    (let [current-player (:current-player screen)]
+      (update-player-indicator current-player entities)))
   
   :on-goal-scored
   (fn [{:keys [goals-1 goals-2] :as screen} entities]
