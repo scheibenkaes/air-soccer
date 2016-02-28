@@ -18,13 +18,13 @@
            :y y)))
 
 (defn create-goal-scored-text []
-  (let [x (/ (game :width) 2)
-        y (/ (game :height) 2)
-        l (label "GOAL!!!" (style :label (bitmap-font font-32) (color :green))
+  (let [l (label "GOAL!!!" (style :label (bitmap-font font-32) (color :green))
                  :set-alignment (align :center))
-        x (- x (/ (label! l :get-pref-width) 2))]
-    (assoc l
-           :label/goal-scored? true :x x :y y)))
+        x (- (/ (game :width) 2)
+             (/ (label! l :get-pref-width) 2))
+        y (+ (/ (game :height) 2)
+             (label! l :get-pref-height))]
+    (assoc l :label/goal-scored? true :x x :y y)))
 
 (defscreen text-screen
   :on-show
