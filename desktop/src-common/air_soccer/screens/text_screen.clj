@@ -1,7 +1,8 @@
 (ns air-soccer.screens.text-screen
   (:require [play-clj.core :refer :all]
             [play-clj.g2d :refer :all]
-            [play-clj.ui :refer :all]))
+            [play-clj.ui :refer :all]
+            [air-soccer.entities :refer :all]))
 
 (def ^:const font-32 "Fipps-32.fnt")
 (def ^:const font-16 "Fipps-16.fnt")
@@ -9,7 +10,7 @@
 (defn create-score-indicator []
   (let [x (/ (game :width) 2)
         y (- (game :height) 35)
-        l (label "0:0" (style :label (style :label (bitmap-font font-16) (color :green)))
+        l (label "0:0" (style :label (style :label (bitmap-font font-16) color-1))
                  :set-alignment (align :center))]
     (assoc l
            :scoreboard? true
@@ -18,7 +19,7 @@
            :y y)))
 
 (defn create-goal-scored-text []
-  (let [l (label "GOAL!!!" (style :label (bitmap-font font-32) (color :green))
+  (let [l (label "GOAL!!!" (style :label (bitmap-font font-32) color-1)
                  :set-alignment (align :center))
         x (- (/ (game :width) 2)
              (/ (label! l :get-pref-width) 2))
@@ -27,7 +28,7 @@
     (assoc l :label/goal-scored? true :x x :y y)))
 
 (defn- create-player-indicator []
-  (let [l (label "TBD" (style :label (bitmap-font font-16) (color :green)))]
+  (let [l (label "TBD" (style :label (bitmap-font font-16) color-1))]
     (assoc l :label/player-indicator? true :x 10 :y (- (game :height) 35))))
 
 (defn update-player-indicator [current-player entities]
@@ -39,7 +40,7 @@
   :on-show
   (fn [screen entities]
     (update! screen :renderer (stage))
-    [(assoc (label "0" (color :red))
+    [(assoc (label "0" color-4)
             :fps? true
             :x 5 :y 0)
      (create-score-indicator)
