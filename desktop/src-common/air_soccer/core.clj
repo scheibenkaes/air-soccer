@@ -67,11 +67,18 @@
            (->> e (animate-spinning-ball screen) (stop-ball-when-too-slow screen))
            e)) entities))
 
-(defn score-for! [screen player]
+(defn score-for! [{:keys [player] :as screen}]
   (let [k (if (= player :player-1) :goals-1 :goals-2)
         score (inc (get screen k))
         {:keys [goals-1 goals-2]} (update! screen k score)]
     (screen! text-screen/text-screen :on-goal-scored :goals-1 goals-1 :goals-2 goals-2)))
+
+(defn on-goal-scoring
+  "Accumulates whatever should be done when a goal is scored.
+  :player in `screen` should indicate who scored"
+  [screen entities]
+  (when-let [player (:player screen)]
+    (score-for! screen)))
 
 (defn create-pitch []
   (let [t (texture "Pitch.png")]
@@ -100,8 +107,9 @@
     (let [f (first-entity screen entities)
           s (second-entity screen entities)]
       (when-let [goal (:goal? f)]
-        (score-for! screen (case goal :left :player-1 :player-2))
-        nil)))
+        (on-goal-scoring
+         (assoc screen :player (case goal :left :player-1 :player-2))
+         entities))))
   
   :on-timer
   (fn [{id :id :as screen} entities])
@@ -131,12 +139,12 @@
 
                     (= key (key-code :num-1))
                     (do
-                      (score-for! screen :player-1)
+                      (score-for! (assoc screen :player :player-1))
                       e)
                     
                     (= key (key-code :num-2))
                     (do
-                      (score-for! screen :player-2)
+                      (score-for! (assoc screen :player :player-2))
                       e)
 
                     :else e) 
