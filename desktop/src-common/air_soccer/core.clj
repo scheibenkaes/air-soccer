@@ -12,21 +12,16 @@
 (defn set-current-player! [screen player]
   (update! screen :current-player player))
 
-(defn stop-ball-body! [{:keys [current-player] :as screen} {:keys [ball?] :as e}]
-  (if ball?
-    (do
-      (assoc
-       (doto e
-         (body! :set-linear-velocity (vector-2 0 0)))
-       :spinning? false))
-    e))
+(defn stop-ball-body! [ball]
+  (doto ball
+    (body! :set-linear-velocity (vector-2 0 0))))
 
-(defn stop-ball! [screen ball & {current-player :current-player
+(defn stop-ball! [screen ball & {:keys [current-player]
                                  :or {current-player :player-1}}]
   (set-current-player! screen current-player)
   (screen! text-screen/text-screen :on-player-change :current-player current-player)
-  (->> ball
-   (stop-ball-body! screen)))
+  (-> (stop-ball-body! ball)
+      (assoc :spinning? false)))
 
 (defn update-arrow! [{:keys [active-player] :as screen} entities]
   (map (fn [{:keys [arrow? width height] :as e}]
@@ -71,6 +66,7 @@
 (defn- stop-ball-when-too-slow [screen {:keys [spinning?] :as e}]
   (let [speed (body! e :get-linear-velocity)]
     (if (and spinning?
+             (not= (vector-2 0 0) speed)
              (ball-too-slow? speed))
       (stop-ball! screen e :current-player (rand-player))
       e)))
@@ -102,6 +98,10 @@
                (body-position! x y (:angle e))))
            e)) entities))
 
+(defn other-guy [current]
+  (case current
+    :player-1 :player-2 :player-1))
+
 (defn on-goal-scoring
   "Accumulates whatever should be done when a goal is scored.
   :player in `screen` should indicate who scored"
@@ -110,10 +110,12 @@
     ;; needed as box2d does not like changing a body's position
     ;; while the world is locked
     (add-timer! screen :after-goal 0.01)
-    (let [ball (find-first :ball? entities)]
-      (stop-ball! screen ball)
-      (score-for! screen)
-      entities)))
+    (mapv (fn [{:keys [ball?] :as e}]
+            (if ball?
+              (do
+                (score-for! screen)
+                (stop-ball! screen e :current-player (other-guy player)))
+              e)) entities)))
 
 (defscreen main-screen
   :on-show
@@ -167,7 +169,8 @@
                 (if ball?
                   (cond
                     (= key (key-code :s))
-                    (stop-ball! screen e :current-player (rand-player))
+                    (do
+                      (stop-ball! screen e :current-player (rand-player)))
                     (= key (key-code :r))
                     (restart-game!)
 
