@@ -76,7 +76,7 @@
 
 (defn create-left-goal [screen]
   (let [w 1
-        h (/ goal-size 2)
+        h goal-size
         s (create-rect w h :color (color :red))
         b (create-rect-body! screen w h)]
     (body-position! b 0 (- (center-y) (/ h 2)) 0)
@@ -86,7 +86,7 @@
 
 (defn create-right-goal [screen]
   (let [w 1
-        h (/ goal-size 2)
+        h goal-size
         s (create-rect w h :color (color :red))
         b (create-rect-body! screen w h)]
     (body-position! b (- (game :width) w) (- (center-y) (/ h 2)) 0)
