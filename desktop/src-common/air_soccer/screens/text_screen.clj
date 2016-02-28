@@ -26,6 +26,10 @@
              (label! l :get-pref-height))]
     (assoc l :label/goal-scored? true :x x :y y)))
 
+(defn- create-player-indicator []
+  (let [l (label "TBD" (style :label (bitmap-font font-16) (color :green)))]
+    (assoc l :label/player-indicator? true :x 10 :y (- (game :height) 35))))
+
 (defscreen text-screen
   :on-show
   (fn [screen entities]
@@ -33,7 +37,8 @@
     [(assoc (label "0" (color :red))
             :fps? true
             :x 5 :y 0)
-     (create-score-indicator)])
+     (create-score-indicator)
+     (create-player-indicator)])
 
   :on-timer
   (fn [screen entities]
