@@ -68,10 +68,10 @@
   (let [s (shape :filled :set-color color :rect 0 0 width height)]
     s))
 
-(defn- center-y []
+(defn center-y []
   (-> (game :height) (/ 2)))
 
-(defn- center-x []
+(defn center-x []
   (-> (game :width) (/ 2)))
 
 (defn create-left-goal [screen]

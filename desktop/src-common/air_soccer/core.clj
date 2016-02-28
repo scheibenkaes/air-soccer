@@ -73,12 +73,31 @@
         {:keys [goals-1 goals-2]} (update! screen k score)]
     (screen! text-screen/text-screen :on-goal-scored :goals-1 goals-1 :goals-2 goals-2)))
 
+(defn center-ball
+  "must not be called from a collission detection fn, 
+  as the world is locked at this moment and setting a position will fail
+  at this point"
+  [screen entities]
+  (map (fn [{:keys [ball?] :as e}]
+         (if ball?
+           (let [x (center-x)
+                 y (center-y)]
+             (doto e
+               (body-position! x y (:angle e))))
+           e)) entities))
+
 (defn on-goal-scoring
   "Accumulates whatever should be done when a goal is scored.
   :player in `screen` should indicate who scored"
   [screen entities]
   (when-let [player (:player screen)]
-    (score-for! screen)))
+    ;; needed as box2d does not like changing a body's position
+    ;; while the world is locked
+    (add-timer! screen :after-goal 0.01)
+    (let [ball (find-first :ball? entities)]
+      (stop-ball! screen ball)
+      (score-for! screen)
+      entities)))
 
 (defn create-pitch []
   (let [t (texture "Pitch.png")]
@@ -101,7 +120,7 @@
        (create-left-goal screen)
        (create-right-goal screen)
        (create-arrow)]))
-
+  
   :on-begin-contact
   (fn [screen entities]
     (let [f (first-entity screen entities)
@@ -112,7 +131,10 @@
          entities))))
   
   :on-timer
-  (fn [{id :id :as screen} entities])
+  (fn [{id :id :as screen} entities]
+    (when (= id :after-goal)
+      (->> entities
+           (center-ball screen))))
 
   :on-touch-down
   (fn [screen entities]
@@ -190,6 +212,8 @@
 
   (require '[play-clj.repl :as repl])
   (filter #(nil? (:body %)) (repl/e main-screen))
+
+  (-> (repl/s main-screen) :world .isLocked)
 
   
   ;; RESET TO MAIN SCREEN  
