@@ -9,15 +9,24 @@
 
 (declare air-soccer-game main-screen)
 
-(defn stop-ball! [screen {:keys [ball?] :as e}]
+(defn set-current-player! [screen player]
+  (update! screen :current-player player))
+
+(defn stop-ball-body! [{:keys [current-player] :as screen} {:keys [ball?] :as e}]
   (if ball?
     (do
-      (update! screen :current-player :player-1)
       (assoc
        (doto e
          (body! :set-linear-velocity (vector-2 0 0)))
        :spinning? false))
     e))
+
+(defn stop-ball! [screen ball & {current-player :current-player
+                                 :or {current-player :player-1}}]
+  (set-current-player! screen current-player)
+  (screen! text-screen/text-screen :on-player-change :current-player current-player)
+  (->> ball
+   (stop-ball-body! screen)))
 
 (defn update-arrow! [{:keys [active-player] :as screen} entities]
   (map (fn [{:keys [arrow? width height] :as e}]
@@ -42,11 +51,12 @@
   (on-gl (set-screen! air-soccer-game main-screen text-screen/text-screen)))
 
 
-(defn- animate-spinning-ball [screen {:keys [animation spinning?] :as e}]
+(defn- animate-spinning-ball [{:keys [current-player] :as screen} {:keys [animation tiles spinning?] :as e}]
   (if spinning?
     (let [t (animation->texture screen animation)]
       (merge e t))
-    e))
+    (let [idx (case current-player :player-1 0 1)]
+      (merge e (nth tiles idx)))))
 
 (def ^:const stop-ball-at "Length of a vector" 1600)
 
@@ -55,16 +65,20 @@
   [v]
   (-> (vector-2! v :len2) (< stop-ball-at)))
 
-(defn- stop-ball-when-too-slow [screen {:keys [] :as e}]
+(defn rand-player []
+  (rand-nth [:player-1 :player-2]))
+
+(defn- stop-ball-when-too-slow [screen {:keys [spinning?] :as e}]
   (let [speed (body! e :get-linear-velocity)]
-    (if (ball-too-slow? speed)
-      (stop-ball! screen e)
+    (if (and spinning?
+             (ball-too-slow? speed))
+      (stop-ball! screen e :current-player (rand-player))
       e)))
 
 (defn animate-ball [screen entities]
   (map (fn [{:keys [ball? spinning?] :as e}]
          (if ball?
-           (->> e (animate-spinning-ball screen) (stop-ball-when-too-slow screen))
+           (->> e (stop-ball-when-too-slow screen) (animate-spinning-ball screen))
            e)) entities))
 
 (defn score-for! [{:keys [player] :as screen}]
@@ -153,7 +167,7 @@
                 (if ball?
                   (cond
                     (= key (key-code :s))
-                    (stop-ball! screen e)
+                    (stop-ball! screen e :current-player (rand-player))
                     (= key (key-code :r))
                     (restart-game!)
 
