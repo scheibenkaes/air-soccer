@@ -97,18 +97,33 @@
            :body b
            :goal? :right)))
 
-(def goalie-body-size [24 12])
+(def goalie-socket-height 12)
 
-(defn create-left-goalie []
-  (let [t (texture "Goalie.png")]
-    (assoc t :left-goalie? true
-           :x 20 :y (center-y))))
+(defn create-left-goalie [screen]
+  (let [x 20
+        y (center-y)
+        t (texture "Goalie.png")
+        w (texture! t :get-region-width)
+        h goalie-socket-height
+        b (create-rect-body! screen w h)]
+    (body-position! b x y 0)
+    [(assoc t :left-goalie? true :body b
+            :x x :y y)
+     (assoc (create-rect w h)
+            :x x :y y)]))
 
-(defn create-right-goalie []
+(defn create-right-goalie [screen]
   (let [t (texture "Goalie.png" :flip true false)
-        x (- (game :width) 60)]
-    (assoc t :right-goalie? true
-           :x x :y (center-y))))
+        w (texture! t :get-region-width)
+        h goalie-socket-height
+        x (- (game :width) w 20)
+        y (center-y)
+        b (create-rect-body! screen w h)]
+    (body-position! b x y 0)
+    [(assoc t :right-goalie? true :body b
+            :x x :y (center-y))
+     (assoc (create-rect w h)
+            :x x :y y)]))
 
 
 (defn create-lower-bounds [screen]
